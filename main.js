@@ -80,271 +80,6 @@ function A9(fun, a, b, c, d, e, f, g, h, i) {
 console.warn('Compiled in DEV mode. Follow the advice at https://elm-lang.org/0.19.1/optimize for better performance and smaller assets.');
 
 
-// EQUALITY
-
-function _Utils_eq(x, y)
-{
-	for (
-		var pair, stack = [], isEqual = _Utils_eqHelp(x, y, 0, stack);
-		isEqual && (pair = stack.pop());
-		isEqual = _Utils_eqHelp(pair.a, pair.b, 0, stack)
-		)
-	{}
-
-	return isEqual;
-}
-
-function _Utils_eqHelp(x, y, depth, stack)
-{
-	if (depth > 100)
-	{
-		stack.push(_Utils_Tuple2(x,y));
-		return true;
-	}
-
-	if (x === y)
-	{
-		return true;
-	}
-
-	if (typeof x !== 'object' || x === null || y === null)
-	{
-		typeof x === 'function' && _Debug_crash(5);
-		return false;
-	}
-
-	/**/
-	if (x.$ === 'Set_elm_builtin')
-	{
-		x = $elm$core$Set$toList(x);
-		y = $elm$core$Set$toList(y);
-	}
-	if (x.$ === 'RBNode_elm_builtin' || x.$ === 'RBEmpty_elm_builtin')
-	{
-		x = $elm$core$Dict$toList(x);
-		y = $elm$core$Dict$toList(y);
-	}
-	//*/
-
-	/**_UNUSED/
-	if (x.$ < 0)
-	{
-		x = $elm$core$Dict$toList(x);
-		y = $elm$core$Dict$toList(y);
-	}
-	//*/
-
-	for (var key in x)
-	{
-		if (!_Utils_eqHelp(x[key], y[key], depth + 1, stack))
-		{
-			return false;
-		}
-	}
-	return true;
-}
-
-var _Utils_equal = F2(_Utils_eq);
-var _Utils_notEqual = F2(function(a, b) { return !_Utils_eq(a,b); });
-
-
-
-// COMPARISONS
-
-// Code in Generate/JavaScript.hs, Basics.js, and List.js depends on
-// the particular integer values assigned to LT, EQ, and GT.
-
-function _Utils_cmp(x, y, ord)
-{
-	if (typeof x !== 'object')
-	{
-		return x === y ? /*EQ*/ 0 : x < y ? /*LT*/ -1 : /*GT*/ 1;
-	}
-
-	/**/
-	if (x instanceof String)
-	{
-		var a = x.valueOf();
-		var b = y.valueOf();
-		return a === b ? 0 : a < b ? -1 : 1;
-	}
-	//*/
-
-	/**_UNUSED/
-	if (typeof x.$ === 'undefined')
-	//*/
-	/**/
-	if (x.$[0] === '#')
-	//*/
-	{
-		return (ord = _Utils_cmp(x.a, y.a))
-			? ord
-			: (ord = _Utils_cmp(x.b, y.b))
-				? ord
-				: _Utils_cmp(x.c, y.c);
-	}
-
-	// traverse conses until end of a list or a mismatch
-	for (; x.b && y.b && !(ord = _Utils_cmp(x.a, y.a)); x = x.b, y = y.b) {} // WHILE_CONSES
-	return ord || (x.b ? /*GT*/ 1 : y.b ? /*LT*/ -1 : /*EQ*/ 0);
-}
-
-var _Utils_lt = F2(function(a, b) { return _Utils_cmp(a, b) < 0; });
-var _Utils_le = F2(function(a, b) { return _Utils_cmp(a, b) < 1; });
-var _Utils_gt = F2(function(a, b) { return _Utils_cmp(a, b) > 0; });
-var _Utils_ge = F2(function(a, b) { return _Utils_cmp(a, b) >= 0; });
-
-var _Utils_compare = F2(function(x, y)
-{
-	var n = _Utils_cmp(x, y);
-	return n < 0 ? $elm$core$Basics$LT : n ? $elm$core$Basics$GT : $elm$core$Basics$EQ;
-});
-
-
-// COMMON VALUES
-
-var _Utils_Tuple0_UNUSED = 0;
-var _Utils_Tuple0 = { $: '#0' };
-
-function _Utils_Tuple2_UNUSED(a, b) { return { a: a, b: b }; }
-function _Utils_Tuple2(a, b) { return { $: '#2', a: a, b: b }; }
-
-function _Utils_Tuple3_UNUSED(a, b, c) { return { a: a, b: b, c: c }; }
-function _Utils_Tuple3(a, b, c) { return { $: '#3', a: a, b: b, c: c }; }
-
-function _Utils_chr_UNUSED(c) { return c; }
-function _Utils_chr(c) { return new String(c); }
-
-
-// RECORDS
-
-function _Utils_update(oldRecord, updatedFields)
-{
-	var newRecord = {};
-
-	for (var key in oldRecord)
-	{
-		newRecord[key] = oldRecord[key];
-	}
-
-	for (var key in updatedFields)
-	{
-		newRecord[key] = updatedFields[key];
-	}
-
-	return newRecord;
-}
-
-
-// APPEND
-
-var _Utils_append = F2(_Utils_ap);
-
-function _Utils_ap(xs, ys)
-{
-	// append Strings
-	if (typeof xs === 'string')
-	{
-		return xs + ys;
-	}
-
-	// append Lists
-	if (!xs.b)
-	{
-		return ys;
-	}
-	var root = _List_Cons(xs.a, ys);
-	xs = xs.b
-	for (var curr = root; xs.b; xs = xs.b) // WHILE_CONS
-	{
-		curr = curr.b = _List_Cons(xs.a, ys);
-	}
-	return root;
-}
-
-
-
-var _List_Nil_UNUSED = { $: 0 };
-var _List_Nil = { $: '[]' };
-
-function _List_Cons_UNUSED(hd, tl) { return { $: 1, a: hd, b: tl }; }
-function _List_Cons(hd, tl) { return { $: '::', a: hd, b: tl }; }
-
-
-var _List_cons = F2(_List_Cons);
-
-function _List_fromArray(arr)
-{
-	var out = _List_Nil;
-	for (var i = arr.length; i--; )
-	{
-		out = _List_Cons(arr[i], out);
-	}
-	return out;
-}
-
-function _List_toArray(xs)
-{
-	for (var out = []; xs.b; xs = xs.b) // WHILE_CONS
-	{
-		out.push(xs.a);
-	}
-	return out;
-}
-
-var _List_map2 = F3(function(f, xs, ys)
-{
-	for (var arr = []; xs.b && ys.b; xs = xs.b, ys = ys.b) // WHILE_CONSES
-	{
-		arr.push(A2(f, xs.a, ys.a));
-	}
-	return _List_fromArray(arr);
-});
-
-var _List_map3 = F4(function(f, xs, ys, zs)
-{
-	for (var arr = []; xs.b && ys.b && zs.b; xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
-	{
-		arr.push(A3(f, xs.a, ys.a, zs.a));
-	}
-	return _List_fromArray(arr);
-});
-
-var _List_map4 = F5(function(f, ws, xs, ys, zs)
-{
-	for (var arr = []; ws.b && xs.b && ys.b && zs.b; ws = ws.b, xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
-	{
-		arr.push(A4(f, ws.a, xs.a, ys.a, zs.a));
-	}
-	return _List_fromArray(arr);
-});
-
-var _List_map5 = F6(function(f, vs, ws, xs, ys, zs)
-{
-	for (var arr = []; vs.b && ws.b && xs.b && ys.b && zs.b; vs = vs.b, ws = ws.b, xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
-	{
-		arr.push(A5(f, vs.a, ws.a, xs.a, ys.a, zs.a));
-	}
-	return _List_fromArray(arr);
-});
-
-var _List_sortBy = F2(function(f, xs)
-{
-	return _List_fromArray(_List_toArray(xs).sort(function(a, b) {
-		return _Utils_cmp(f(a), f(b));
-	}));
-});
-
-var _List_sortWith = F2(function(f, xs)
-{
-	return _List_fromArray(_List_toArray(xs).sort(function(a, b) {
-		var ord = A2(f, a, b);
-		return ord === $elm$core$Basics$EQ ? 0 : ord === $elm$core$Basics$LT ? -1 : 1;
-	}));
-});
-
-
-
 var _JsArray_empty = [];
 
 function _JsArray_singleton(value)
@@ -790,6 +525,271 @@ function _Debug_regionToString(region)
 	}
 	return 'on lines ' + region.start.line + ' through ' + region.end.line;
 }
+
+
+
+// EQUALITY
+
+function _Utils_eq(x, y)
+{
+	for (
+		var pair, stack = [], isEqual = _Utils_eqHelp(x, y, 0, stack);
+		isEqual && (pair = stack.pop());
+		isEqual = _Utils_eqHelp(pair.a, pair.b, 0, stack)
+		)
+	{}
+
+	return isEqual;
+}
+
+function _Utils_eqHelp(x, y, depth, stack)
+{
+	if (depth > 100)
+	{
+		stack.push(_Utils_Tuple2(x,y));
+		return true;
+	}
+
+	if (x === y)
+	{
+		return true;
+	}
+
+	if (typeof x !== 'object' || x === null || y === null)
+	{
+		typeof x === 'function' && _Debug_crash(5);
+		return false;
+	}
+
+	/**/
+	if (x.$ === 'Set_elm_builtin')
+	{
+		x = $elm$core$Set$toList(x);
+		y = $elm$core$Set$toList(y);
+	}
+	if (x.$ === 'RBNode_elm_builtin' || x.$ === 'RBEmpty_elm_builtin')
+	{
+		x = $elm$core$Dict$toList(x);
+		y = $elm$core$Dict$toList(y);
+	}
+	//*/
+
+	/**_UNUSED/
+	if (x.$ < 0)
+	{
+		x = $elm$core$Dict$toList(x);
+		y = $elm$core$Dict$toList(y);
+	}
+	//*/
+
+	for (var key in x)
+	{
+		if (!_Utils_eqHelp(x[key], y[key], depth + 1, stack))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+var _Utils_equal = F2(_Utils_eq);
+var _Utils_notEqual = F2(function(a, b) { return !_Utils_eq(a,b); });
+
+
+
+// COMPARISONS
+
+// Code in Generate/JavaScript.hs, Basics.js, and List.js depends on
+// the particular integer values assigned to LT, EQ, and GT.
+
+function _Utils_cmp(x, y, ord)
+{
+	if (typeof x !== 'object')
+	{
+		return x === y ? /*EQ*/ 0 : x < y ? /*LT*/ -1 : /*GT*/ 1;
+	}
+
+	/**/
+	if (x instanceof String)
+	{
+		var a = x.valueOf();
+		var b = y.valueOf();
+		return a === b ? 0 : a < b ? -1 : 1;
+	}
+	//*/
+
+	/**_UNUSED/
+	if (typeof x.$ === 'undefined')
+	//*/
+	/**/
+	if (x.$[0] === '#')
+	//*/
+	{
+		return (ord = _Utils_cmp(x.a, y.a))
+			? ord
+			: (ord = _Utils_cmp(x.b, y.b))
+				? ord
+				: _Utils_cmp(x.c, y.c);
+	}
+
+	// traverse conses until end of a list or a mismatch
+	for (; x.b && y.b && !(ord = _Utils_cmp(x.a, y.a)); x = x.b, y = y.b) {} // WHILE_CONSES
+	return ord || (x.b ? /*GT*/ 1 : y.b ? /*LT*/ -1 : /*EQ*/ 0);
+}
+
+var _Utils_lt = F2(function(a, b) { return _Utils_cmp(a, b) < 0; });
+var _Utils_le = F2(function(a, b) { return _Utils_cmp(a, b) < 1; });
+var _Utils_gt = F2(function(a, b) { return _Utils_cmp(a, b) > 0; });
+var _Utils_ge = F2(function(a, b) { return _Utils_cmp(a, b) >= 0; });
+
+var _Utils_compare = F2(function(x, y)
+{
+	var n = _Utils_cmp(x, y);
+	return n < 0 ? $elm$core$Basics$LT : n ? $elm$core$Basics$GT : $elm$core$Basics$EQ;
+});
+
+
+// COMMON VALUES
+
+var _Utils_Tuple0_UNUSED = 0;
+var _Utils_Tuple0 = { $: '#0' };
+
+function _Utils_Tuple2_UNUSED(a, b) { return { a: a, b: b }; }
+function _Utils_Tuple2(a, b) { return { $: '#2', a: a, b: b }; }
+
+function _Utils_Tuple3_UNUSED(a, b, c) { return { a: a, b: b, c: c }; }
+function _Utils_Tuple3(a, b, c) { return { $: '#3', a: a, b: b, c: c }; }
+
+function _Utils_chr_UNUSED(c) { return c; }
+function _Utils_chr(c) { return new String(c); }
+
+
+// RECORDS
+
+function _Utils_update(oldRecord, updatedFields)
+{
+	var newRecord = {};
+
+	for (var key in oldRecord)
+	{
+		newRecord[key] = oldRecord[key];
+	}
+
+	for (var key in updatedFields)
+	{
+		newRecord[key] = updatedFields[key];
+	}
+
+	return newRecord;
+}
+
+
+// APPEND
+
+var _Utils_append = F2(_Utils_ap);
+
+function _Utils_ap(xs, ys)
+{
+	// append Strings
+	if (typeof xs === 'string')
+	{
+		return xs + ys;
+	}
+
+	// append Lists
+	if (!xs.b)
+	{
+		return ys;
+	}
+	var root = _List_Cons(xs.a, ys);
+	xs = xs.b
+	for (var curr = root; xs.b; xs = xs.b) // WHILE_CONS
+	{
+		curr = curr.b = _List_Cons(xs.a, ys);
+	}
+	return root;
+}
+
+
+
+var _List_Nil_UNUSED = { $: 0 };
+var _List_Nil = { $: '[]' };
+
+function _List_Cons_UNUSED(hd, tl) { return { $: 1, a: hd, b: tl }; }
+function _List_Cons(hd, tl) { return { $: '::', a: hd, b: tl }; }
+
+
+var _List_cons = F2(_List_Cons);
+
+function _List_fromArray(arr)
+{
+	var out = _List_Nil;
+	for (var i = arr.length; i--; )
+	{
+		out = _List_Cons(arr[i], out);
+	}
+	return out;
+}
+
+function _List_toArray(xs)
+{
+	for (var out = []; xs.b; xs = xs.b) // WHILE_CONS
+	{
+		out.push(xs.a);
+	}
+	return out;
+}
+
+var _List_map2 = F3(function(f, xs, ys)
+{
+	for (var arr = []; xs.b && ys.b; xs = xs.b, ys = ys.b) // WHILE_CONSES
+	{
+		arr.push(A2(f, xs.a, ys.a));
+	}
+	return _List_fromArray(arr);
+});
+
+var _List_map3 = F4(function(f, xs, ys, zs)
+{
+	for (var arr = []; xs.b && ys.b && zs.b; xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
+	{
+		arr.push(A3(f, xs.a, ys.a, zs.a));
+	}
+	return _List_fromArray(arr);
+});
+
+var _List_map4 = F5(function(f, ws, xs, ys, zs)
+{
+	for (var arr = []; ws.b && xs.b && ys.b && zs.b; ws = ws.b, xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
+	{
+		arr.push(A4(f, ws.a, xs.a, ys.a, zs.a));
+	}
+	return _List_fromArray(arr);
+});
+
+var _List_map5 = F6(function(f, vs, ws, xs, ys, zs)
+{
+	for (var arr = []; vs.b && ws.b && xs.b && ys.b && zs.b; vs = vs.b, ws = ws.b, xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
+	{
+		arr.push(A5(f, vs.a, ws.a, xs.a, ys.a, zs.a));
+	}
+	return _List_fromArray(arr);
+});
+
+var _List_sortBy = F2(function(f, xs)
+{
+	return _List_fromArray(_List_toArray(xs).sort(function(a, b) {
+		return _Utils_cmp(f(a), f(b));
+	}));
+});
+
+var _List_sortWith = F2(function(f, xs)
+{
+	return _List_fromArray(_List_toArray(xs).sort(function(a, b) {
+		var ord = A2(f, a, b);
+		return ord === $elm$core$Basics$EQ ? 0 : ord === $elm$core$Basics$LT ? -1 : 1;
+	}));
+});
 
 
 
@@ -4492,10 +4492,35 @@ function _Http_multipart(parts)
 
 	return $elm$http$Http$Internal$FormDataBody(formData);
 }
-var $elm$core$Basics$EQ = {$: 'EQ'};
-var $elm$core$Basics$GT = {$: 'GT'};
-var $elm$core$Basics$LT = {$: 'LT'};
+var $elm$core$Maybe$Just = function (a) {
+	return {$: 'Just', a: a};
+};
+var $elm$core$Maybe$Nothing = {$: 'Nothing'};
 var $elm$core$List$cons = _List_cons;
+var $elm$core$Elm$JsArray$foldr = _JsArray_foldr;
+var $elm$core$Array$foldr = F3(
+	function (func, baseCase, _v0) {
+		var tree = _v0.c;
+		var tail = _v0.d;
+		var helper = F2(
+			function (node, acc) {
+				if (node.$ === 'SubTree') {
+					var subTree = node.a;
+					return A3($elm$core$Elm$JsArray$foldr, helper, acc, subTree);
+				} else {
+					var values = node.a;
+					return A3($elm$core$Elm$JsArray$foldr, func, acc, values);
+				}
+			});
+		return A3(
+			$elm$core$Elm$JsArray$foldr,
+			helper,
+			A3($elm$core$Elm$JsArray$foldr, func, baseCase, tail),
+			tree);
+	});
+var $elm$core$Array$toList = function (array) {
+	return A3($elm$core$Array$foldr, $elm$core$List$cons, _List_Nil, array);
+};
 var $elm$core$Dict$foldr = F3(
 	function (func, acc, t) {
 		foldr:
@@ -4548,30 +4573,9 @@ var $elm$core$Set$toList = function (_v0) {
 	var dict = _v0.a;
 	return $elm$core$Dict$keys(dict);
 };
-var $elm$core$Elm$JsArray$foldr = _JsArray_foldr;
-var $elm$core$Array$foldr = F3(
-	function (func, baseCase, _v0) {
-		var tree = _v0.c;
-		var tail = _v0.d;
-		var helper = F2(
-			function (node, acc) {
-				if (node.$ === 'SubTree') {
-					var subTree = node.a;
-					return A3($elm$core$Elm$JsArray$foldr, helper, acc, subTree);
-				} else {
-					var values = node.a;
-					return A3($elm$core$Elm$JsArray$foldr, func, acc, values);
-				}
-			});
-		return A3(
-			$elm$core$Elm$JsArray$foldr,
-			helper,
-			A3($elm$core$Elm$JsArray$foldr, func, baseCase, tail),
-			tree);
-	});
-var $elm$core$Array$toList = function (array) {
-	return A3($elm$core$Array$foldr, $elm$core$List$cons, _List_Nil, array);
-};
+var $elm$core$Basics$EQ = {$: 'EQ'};
+var $elm$core$Basics$GT = {$: 'GT'};
+var $elm$core$Basics$LT = {$: 'LT'};
 var $elm$core$Result$Err = function (a) {
 	return {$: 'Err', a: a};
 };
@@ -4595,10 +4599,6 @@ var $elm$json$Json$Decode$OneOf = function (a) {
 };
 var $elm$core$Basics$False = {$: 'False'};
 var $elm$core$Basics$add = _Basics_add;
-var $elm$core$Maybe$Just = function (a) {
-	return {$: 'Just', a: a};
-};
-var $elm$core$Maybe$Nothing = {$: 'Nothing'};
 var $elm$core$String$all = _String_all;
 var $elm$core$Basics$and = _Basics_and;
 var $elm$core$Basics$append = _Utils_append;
@@ -4967,6 +4967,7 @@ var $elm$core$Result$isOk = function (result) {
 		return false;
 	}
 };
+var $elm$json$Json$Decode$andThen = _Json_andThen;
 var $elm$json$Json$Decode$map = _Json_map1;
 var $elm$json$Json$Decode$map2 = _Json_map2;
 var $elm$json$Json$Decode$succeed = _Json_succeed;
@@ -5281,9 +5282,11 @@ var $elm$core$Task$perform = F2(
 				A2($elm$core$Task$map, toMessage, task)));
 	});
 var $elm$browser$Browser$element = _Browser_element;
-var $author$project$Main$Model = function (quote) {
-	return {quote: quote};
-};
+var $elm$json$Json$Decode$field = _Json_decodeField;
+var $author$project$Main$Model = F6(
+	function (username, password, token, quote, protectedQuote, errorMsg) {
+		return {errorMsg: errorMsg, password: password, protectedQuote: protectedQuote, quote: quote, token: token, username: username};
+	});
 var $author$project$Main$FetchRandomQuoteCompleted = function (a) {
 	return {$: 'FetchRandomQuoteCompleted', a: a};
 };
@@ -5896,44 +5899,298 @@ var $elm$http$Http$send = F2(
 			$elm$http$Http$toTask(request_));
 	});
 var $author$project$Main$fetchRandomQuoteCmd = A2($elm$http$Http$send, $author$project$Main$FetchRandomQuoteCompleted, $author$project$Main$fetchRandomQuote);
-var $author$project$Main$init = function (_v0) {
-	return _Utils_Tuple2(
-		$author$project$Main$Model(''),
-		$author$project$Main$fetchRandomQuoteCmd);
+var $author$project$Main$init = function (model) {
+	if (model.$ === 'Just') {
+		var initModel = model.a;
+		return _Utils_Tuple2(initModel, $author$project$Main$fetchRandomQuoteCmd);
+	} else {
+		return _Utils_Tuple2(
+			A6($author$project$Main$Model, '', '', '', '', '', ''),
+			$author$project$Main$fetchRandomQuoteCmd);
+	}
 };
+var $elm$json$Json$Decode$null = _Json_decodeNull;
+var $elm$json$Json$Decode$oneOf = _Json_oneOf;
+var $elm$json$Json$Decode$string = _Json_decodeString;
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
 var $author$project$Main$subscriptions = function (model) {
 	return $elm$core$Platform$Sub$none;
 };
+var $author$project$Main$GetTokenCompleted = function (a) {
+	return {$: 'GetTokenCompleted', a: a};
+};
+var $elm$http$Http$Internal$StringBody = F2(
+	function (a, b) {
+		return {$: 'StringBody', a: a, b: b};
+	});
+var $elm$http$Http$jsonBody = function (value) {
+	return A2(
+		$elm$http$Http$Internal$StringBody,
+		'application/json',
+		A2($elm$json$Json$Encode$encode, 0, value));
+};
+var $elm$json$Json$Decode$decodeString = _Json_runOnString;
+var $elm$http$Http$expectJson = function (decoder) {
+	return $elm$http$Http$expectStringResponse(
+		function (response) {
+			var _v0 = A2($elm$json$Json$Decode$decodeString, decoder, response.body);
+			if (_v0.$ === 'Err') {
+				var decodeError = _v0.a;
+				return $elm$core$Result$Err(
+					$elm$json$Json$Decode$errorToString(decodeError));
+			} else {
+				var value = _v0.a;
+				return $elm$core$Result$Ok(value);
+			}
+		});
+};
+var $elm$http$Http$post = F3(
+	function (url, body, decoder) {
+		return $elm$http$Http$request(
+			{
+				body: body,
+				expect: $elm$http$Http$expectJson(decoder),
+				headers: _List_Nil,
+				method: 'POST',
+				timeout: $elm$core$Maybe$Nothing,
+				url: url,
+				withCredentials: false
+			});
+	});
+var $author$project$Main$tokenDecoder = A2($elm$json$Json$Decode$field, 'access_token', $elm$json$Json$Decode$string);
+var $elm$json$Json$Encode$object = function (pairs) {
+	return _Json_wrap(
+		A3(
+			$elm$core$List$foldl,
+			F2(
+				function (_v0, obj) {
+					var k = _v0.a;
+					var v = _v0.b;
+					return A3(_Json_addField, k, v, obj);
+				}),
+			_Json_emptyObject(_Utils_Tuple0),
+			pairs));
+};
+var $elm$json$Json$Encode$string = _Json_wrap;
+var $author$project$Main$userEncoder = function (model) {
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'username',
+				$elm$json$Json$Encode$string(model.username)),
+				_Utils_Tuple2(
+				'password',
+				$elm$json$Json$Encode$string(model.password))
+			]));
+};
+var $author$project$Main$authUser = F2(
+	function (model, apiUrl) {
+		var body = $elm$http$Http$jsonBody(
+			$author$project$Main$userEncoder(model));
+		return A3($elm$http$Http$post, apiUrl, body, $author$project$Main$tokenDecoder);
+	});
+var $author$project$Main$authUserCmd = F2(
+	function (model, apiUrl) {
+		return A2(
+			$elm$http$Http$send,
+			$author$project$Main$GetTokenCompleted,
+			A2($author$project$Main$authUser, model, apiUrl));
+	});
+var $author$project$Main$FetchProtectedQuoteCompleted = function (a) {
+	return {$: 'FetchProtectedQuoteCompleted', a: a};
+};
+var $elm$http$Http$Internal$Header = F2(
+	function (a, b) {
+		return {$: 'Header', a: a, b: b};
+	});
+var $elm$http$Http$header = $elm$http$Http$Internal$Header;
+var $author$project$Main$protectedQuoteUrl = $author$project$Main$api + 'api/protected/random-quote';
+var $author$project$Main$fetchProtectedQuote = function (model) {
+	return $elm$http$Http$request(
+		{
+			body: $elm$http$Http$emptyBody,
+			expect: $elm$http$Http$expectString,
+			headers: _List_fromArray(
+				[
+					A2($elm$http$Http$header, 'Authorization', 'Bearer ' + model.token)
+				]),
+			method: 'GET',
+			timeout: $elm$core$Maybe$Nothing,
+			url: $author$project$Main$protectedQuoteUrl,
+			withCredentials: false
+		});
+};
+var $author$project$Main$fetchProtectedQuoteCmd = function (model) {
+	return A2(
+		$elm$http$Http$send,
+		$author$project$Main$FetchProtectedQuoteCompleted,
+		$author$project$Main$fetchProtectedQuote(model));
+};
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $author$project$Main$fetchRandomQuoteCompleted = F2(
+var $author$project$Main$setStorage = _Platform_outgoingPort(
+	'setStorage',
+	function ($) {
+		return $elm$json$Json$Encode$object(
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'errorMsg',
+					$elm$json$Json$Encode$string($.errorMsg)),
+					_Utils_Tuple2(
+					'password',
+					$elm$json$Json$Encode$string($.password)),
+					_Utils_Tuple2(
+					'protectedQuote',
+					$elm$json$Json$Encode$string($.protectedQuote)),
+					_Utils_Tuple2(
+					'quote',
+					$elm$json$Json$Encode$string($.quote)),
+					_Utils_Tuple2(
+					'token',
+					$elm$json$Json$Encode$string($.token)),
+					_Utils_Tuple2(
+					'username',
+					$elm$json$Json$Encode$string($.username))
+				]));
+	});
+var $author$project$Main$setStorageHelper = function (model) {
+	return _Utils_Tuple2(
+		model,
+		$author$project$Main$setStorage(model));
+};
+var $author$project$Main$fetchProtectedQuoteCompleted = F2(
 	function (model, result) {
 		if (result.$ === 'Ok') {
-			var newQuote = result.a;
-			return _Utils_Tuple2(
+			var newPQuote = result.a;
+			return $author$project$Main$setStorageHelper(
 				_Utils_update(
 					model,
-					{quote: newQuote}),
-				$elm$core$Platform$Cmd$none);
+					{protectedQuote: newPQuote}));
 		} else {
 			return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 		}
 	});
-var $author$project$Main$update = F2(
-	function (msg, model) {
-		if (msg.$ === 'GetQuote') {
-			return _Utils_Tuple2(model, $author$project$Main$fetchRandomQuoteCmd);
+var $author$project$Main$fetchRandomQuoteCompleted = F2(
+	function (model, result) {
+		if (result.$ === 'Ok') {
+			var newQuote = result.a;
+			return $author$project$Main$setStorageHelper(
+				_Utils_update(
+					model,
+					{quote: newQuote}));
 		} else {
-			var result = msg.a;
-			return A2($author$project$Main$fetchRandomQuoteCompleted, model, result);
+			return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 		}
 	});
+var $author$project$Main$getTokenCompleted = F2(
+	function (model, result) {
+		if (result.$ === 'Ok') {
+			var newToken = result.a;
+			return $author$project$Main$setStorageHelper(
+				_Utils_update(
+					model,
+					{errorMsg: '', password: '', token: newToken}));
+		} else {
+			var error = result.a;
+			return _Utils_Tuple2(
+				_Utils_update(
+					model,
+					{errorMsg: 'There was some error'}),
+				$elm$core$Platform$Cmd$none);
+		}
+	});
+var $author$project$Main$loginUrl = $author$project$Main$api + 'sessions/create';
+var $author$project$Main$registerUrl = $author$project$Main$api + 'users';
+var $author$project$Main$removeStorage = _Platform_outgoingPort(
+	'removeStorage',
+	function ($) {
+		return $elm$json$Json$Encode$object(
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'errorMsg',
+					$elm$json$Json$Encode$string($.errorMsg)),
+					_Utils_Tuple2(
+					'password',
+					$elm$json$Json$Encode$string($.password)),
+					_Utils_Tuple2(
+					'protectedQuote',
+					$elm$json$Json$Encode$string($.protectedQuote)),
+					_Utils_Tuple2(
+					'quote',
+					$elm$json$Json$Encode$string($.quote)),
+					_Utils_Tuple2(
+					'token',
+					$elm$json$Json$Encode$string($.token)),
+					_Utils_Tuple2(
+					'username',
+					$elm$json$Json$Encode$string($.username))
+				]));
+	});
+var $author$project$Main$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'GetQuote':
+				return _Utils_Tuple2(model, $author$project$Main$fetchRandomQuoteCmd);
+			case 'FetchRandomQuoteCompleted':
+				var result = msg.a;
+				return A2($author$project$Main$fetchRandomQuoteCompleted, model, result);
+			case 'GetProtectedQuote':
+				return _Utils_Tuple2(
+					model,
+					$author$project$Main$fetchProtectedQuoteCmd(model));
+			case 'FetchProtectedQuoteCompleted':
+				var result = msg.a;
+				return A2($author$project$Main$fetchProtectedQuoteCompleted, model, result);
+			case 'SetUsername':
+				var username = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{username: username}),
+					$elm$core$Platform$Cmd$none);
+			case 'SetPassword':
+				var password = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{password: password}),
+					$elm$core$Platform$Cmd$none);
+			case 'ClickRegisterUser':
+				return _Utils_Tuple2(
+					model,
+					A2($author$project$Main$authUserCmd, model, $author$project$Main$registerUrl));
+			case 'ClickLogIn':
+				return _Utils_Tuple2(
+					model,
+					A2($author$project$Main$authUserCmd, model, $author$project$Main$loginUrl));
+			case 'GetTokenCompleted':
+				var result = msg.a;
+				return A2($author$project$Main$getTokenCompleted, model, result);
+			default:
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{token: '', username: ''}),
+					$author$project$Main$removeStorage(model));
+		}
+	});
+var $author$project$Main$ClickLogIn = {$: 'ClickLogIn'};
+var $author$project$Main$ClickRegisterUser = {$: 'ClickRegisterUser'};
+var $author$project$Main$GetProtectedQuote = {$: 'GetProtectedQuote'};
 var $author$project$Main$GetQuote = {$: 'GetQuote'};
+var $author$project$Main$LogOut = {$: 'LogOut'};
+var $author$project$Main$SetPassword = function (a) {
+	return {$: 'SetPassword', a: a};
+};
+var $author$project$Main$SetUsername = function (a) {
+	return {$: 'SetUsername', a: a};
+};
 var $elm$html$Html$blockquote = _VirtualDom_node('blockquote');
 var $elm$html$Html$button = _VirtualDom_node('button');
-var $elm$json$Json$Encode$string = _Json_wrap;
 var $elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
 		return A2(
@@ -5943,7 +6200,12 @@ var $elm$html$Html$Attributes$stringProperty = F2(
 	});
 var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
 var $elm$html$Html$div = _VirtualDom_node('div');
+var $elm$html$Html$Attributes$for = $elm$html$Html$Attributes$stringProperty('htmlFor');
 var $elm$html$Html$h2 = _VirtualDom_node('h2');
+var $elm$html$Html$h3 = _VirtualDom_node('h3');
+var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
+var $elm$html$Html$input = _VirtualDom_node('input');
+var $elm$html$Html$label = _VirtualDom_node('label');
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
 	return {$: 'Normal', a: a};
 };
@@ -5961,10 +6223,307 @@ var $elm$html$Html$Events$onClick = function (msg) {
 		'click',
 		$elm$json$Json$Decode$succeed(msg));
 };
+var $elm$html$Html$Events$alwaysStop = function (x) {
+	return _Utils_Tuple2(x, true);
+};
+var $elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
+	return {$: 'MayStopPropagation', a: a};
+};
+var $elm$html$Html$Events$stopPropagationOn = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
+	});
+var $elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
+	});
+var $elm$html$Html$Events$targetValue = A2(
+	$elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'value']),
+	$elm$json$Json$Decode$string);
+var $elm$html$Html$Events$onInput = function (tagger) {
+	return A2(
+		$elm$html$Html$Events$stopPropagationOn,
+		'input',
+		A2(
+			$elm$json$Json$Decode$map,
+			$elm$html$Html$Events$alwaysStop,
+			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
+};
 var $elm$html$Html$p = _VirtualDom_node('p');
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
+var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
+var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
 var $author$project$Main$view = function (model) {
+	var loggedIn = ($elm$core$String$length(model.token) > 0) ? true : false;
+	var protectedQuoteView = function () {
+		var hideIfNoProtectedQuote = $elm$core$String$isEmpty(model.protectedQuote) ? 'hidden' : '';
+		return loggedIn ? A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$p,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('text-center')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('btn btn-info'),
+									$elm$html$Html$Events$onClick($author$project$Main$GetProtectedQuote)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Grab a protected quote!')
+								]))
+						])),
+					A2(
+					$elm$html$Html$blockquote,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class(hideIfNoProtectedQuote)
+						]),
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$p,
+							_List_Nil,
+							_List_fromArray(
+								[
+									$elm$html$Html$text(model.protectedQuote)
+								]))
+						]))
+				])) : A2(
+			$elm$html$Html$p,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('text-center')
+				]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text('Please log in or register to see protected quotes.')
+				]));
+	}();
+	var authBoxView = function () {
+		var showError = $elm$core$String$isEmpty(model.errorMsg) ? 'hidden' : '';
+		var greeting = 'Hello, ' + (model.username + '!');
+		return loggedIn ? A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$id('greeting')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$h3,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('text-center')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text(greeting)
+						])),
+					A2(
+					$elm$html$Html$p,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('text-center')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('You have super-secret access to protected quotes.')
+						])),
+					A2(
+					$elm$html$Html$p,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('text-center')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('btn btn-danger'),
+									$elm$html$Html$Events$onClick($author$project$Main$LogOut)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Log Out')
+								]))
+						]))
+				])) : A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$id('form')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$h2,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('text-center')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Log In or Register')
+						])),
+					A2(
+					$elm$html$Html$p,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('help-block')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('If you already have an account, please Log In. Otherwise, enter your desired username and password and Register.')
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class(showError)
+						]),
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$div,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('alert alert-danger')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text(model.errorMsg)
+								]))
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('form-group row')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$div,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('col-md-offset-2 col-md-8')
+								]),
+							_List_fromArray(
+								[
+									A2(
+									$elm$html$Html$label,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$for('username')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text('Username:')
+										])),
+									A2(
+									$elm$html$Html$input,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$id('username'),
+											$elm$html$Html$Attributes$type_('text'),
+											$elm$html$Html$Attributes$class('form-control'),
+											$elm$html$Html$Attributes$value(model.username),
+											$elm$html$Html$Events$onInput($author$project$Main$SetUsername)
+										]),
+									_List_Nil)
+								]))
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('form-group row')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$div,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('col-md-offset-2 col-md-8')
+								]),
+							_List_fromArray(
+								[
+									A2(
+									$elm$html$Html$label,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$for('password')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text('Password:')
+										])),
+									A2(
+									$elm$html$Html$input,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$id('password'),
+											$elm$html$Html$Attributes$type_('password'),
+											$elm$html$Html$Attributes$class('form-control'),
+											$elm$html$Html$Attributes$value(model.password),
+											$elm$html$Html$Events$onInput($author$project$Main$SetPassword)
+										]),
+									_List_Nil)
+								]))
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('text-center')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('btn btn-primary'),
+									$elm$html$Html$Events$onClick($author$project$Main$ClickLogIn)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Log In')
+								])),
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('btn btn-link'),
+									$elm$html$Html$Events$onClick($author$project$Main$ClickRegisterUser)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Register')
+								]))
+						]))
+				]));
+	}();
 	return A2(
 		$elm$html$Html$div,
 		_List_fromArray(
@@ -6015,10 +6574,74 @@ var $author$project$Main$view = function (model) {
 							[
 								$elm$html$Html$text(model.quote)
 							]))
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('jumbotron text-left')
+					]),
+				_List_fromArray(
+					[authBoxView])),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$h2,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('text-center')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Protected Chuck Norris Quotes')
+							])),
+						protectedQuoteView
 					]))
 			]));
 };
 var $author$project$Main$main = $elm$browser$Browser$element(
 	{init: $author$project$Main$init, subscriptions: $author$project$Main$subscriptions, update: $author$project$Main$update, view: $author$project$Main$view});
 _Platform_export({'Main':{'init':$author$project$Main$main(
-	$elm$json$Json$Decode$succeed(_Utils_Tuple0))(0)}});}(this));
+	$elm$json$Json$Decode$oneOf(
+		_List_fromArray(
+			[
+				$elm$json$Json$Decode$null($elm$core$Maybe$Nothing),
+				A2(
+				$elm$json$Json$Decode$map,
+				$elm$core$Maybe$Just,
+				A2(
+					$elm$json$Json$Decode$andThen,
+					function (username) {
+						return A2(
+							$elm$json$Json$Decode$andThen,
+							function (token) {
+								return A2(
+									$elm$json$Json$Decode$andThen,
+									function (quote) {
+										return A2(
+											$elm$json$Json$Decode$andThen,
+											function (protectedQuote) {
+												return A2(
+													$elm$json$Json$Decode$andThen,
+													function (password) {
+														return A2(
+															$elm$json$Json$Decode$andThen,
+															function (errorMsg) {
+																return $elm$json$Json$Decode$succeed(
+																	{errorMsg: errorMsg, password: password, protectedQuote: protectedQuote, quote: quote, token: token, username: username});
+															},
+															A2($elm$json$Json$Decode$field, 'errorMsg', $elm$json$Json$Decode$string));
+													},
+													A2($elm$json$Json$Decode$field, 'password', $elm$json$Json$Decode$string));
+											},
+											A2($elm$json$Json$Decode$field, 'protectedQuote', $elm$json$Json$Decode$string));
+									},
+									A2($elm$json$Json$Decode$field, 'quote', $elm$json$Json$Decode$string));
+							},
+							A2($elm$json$Json$Decode$field, 'token', $elm$json$Json$Decode$string));
+					},
+					A2($elm$json$Json$Decode$field, 'username', $elm$json$Json$Decode$string)))
+			])))(0)}});}(this));

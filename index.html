@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <title>Main</title>
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+    />
+
     <link rel="stylesheet" href="./src/styles.css" />
     <script src="main.js"></script>
   </head>
@@ -10,8 +15,19 @@
   <body>
     <div id="elm"></div>
     <script>
-      var app = Elm.Main.init({
-        node: document.getElementById("elm")
+      var storedState = localStorage.getItem("model");
+      var startingState = storedState ? JSON.parse(storedState) : null;
+      var elmApp = Elm.Main.init({
+        node: document.getElementById("elm"),
+        flags: startingState
+      });
+
+      elmApp.ports.setStorage.subscribe(function(state) {
+        localStorage.setItem("model", JSON.stringify(state));
+      });
+
+      elmApp.ports.removeStorage.subscribe(function() {
+        localStorage.removeItem("model");
       });
     </script>
   </body>
